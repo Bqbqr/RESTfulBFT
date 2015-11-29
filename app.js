@@ -57,7 +57,7 @@ app.get("/bftool", function (req, res, err) {
 });
 
 
-//new user
+//Show users
 app.get("/bftool/users", function (req, res, err) {
 
 	getConnection();
@@ -139,6 +139,37 @@ app.post("/bftool/users/new", function (req, res, err) {
 		res.end();
 	});
 });
+
+//Show rentals
+app.get("/bftool/MH", function (req, res, err) {
+
+	getConnection();
+
+	var sql = "SELECT nom, gaz, etat, reparation, urgent FROM location;";
+	connection.query(sql, function(err,results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+		var response={
+			locations: []
+			};
+
+		for(var i = 0; i< results.length; i++){
+			response.locations.push({
+				nom: results[i]['nom'],
+				gaz: results[i]['gaz'],
+				etat: results[i]['etat'],
+				reparation: results[i]['reparation'],
+				urgent: results[i]['urgent']
+			});
+		}
+		res.json(response);
+		res.end();
+	});
+
+});
+
 
 //New MH
 app.post("/bftool/MH/new", function (req, res, err) {
