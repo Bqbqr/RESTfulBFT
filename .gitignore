@@ -42,3 +42,5 @@ Network Trash Folder
 Temporary Items
 .apdisk
 config.js
+node_modules/mysql/node_modules/readable-stream/readable.js
+node_modules/
