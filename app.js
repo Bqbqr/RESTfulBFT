@@ -140,7 +140,57 @@ app.post("/bftool/users/new", function (req, res, err) {
 	});
 });
 
+//New MH
+app.post("/bftool/MH/new", function (req, res, err) {
+	var loc_nom = req.body.nom;
+	console.log(loc_nom);
+	if(!loc_nom || loc_nom == ""){
+		res.json({
+			error:{
+				code: 404,
+				message: "MH Name must be set"+loc_nom
+			}
+		});
+		return;
+	}
+	getConnection();
 
+	var sql = "SELECT `nom` FROM `location` WHERE `nom`=" + connection.escape(loc_nom);
+	connection.query(sql, function(err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+
+		if(results.length > 0){
+			res.json({
+				error:{
+					code: 403,
+					message: "User already Exists"
+				}
+			});
+			return;
+		}
+
+	});
+
+	sql = "INSERT INTO `location` (nom) VALUES ("+connection.escape(loc_nom)+")";
+	console.log(sql);
+	connection.query(sql, function (err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+
+		res.json({
+			success:{
+				location: loc_nom
+			}
+		});
+
+		res.end();
+	});
+});
 
 
 
