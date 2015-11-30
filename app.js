@@ -223,6 +223,110 @@ app.post("/bftool/MH/new", function (req, res, err) {
 	});
 });
 
+//Show inter
+app.get("/bftool/intervention", function (req, res, err) {
+
+	getConnection();
+
+	var sql = "SELECT nomPersonne, location, time, onit FROM intervention;";
+	connection.query(sql, function(err,results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+		var response={
+			intervention: []
+			};
+
+		for(var i = 0; i< results.length; i++){
+			response.intervention.push({
+				time: results[i]['time'],
+				nomPersonne: results[i]['nomPersonne'],
+				location: results[i]['location'],
+				onit: results[i]['onit']
+			});
+		}
+		res.json(response);
+		res.end();
+	});
+
+});
+
+//New Inter
+app.post("/bftool/intervention/new", function (req, res, err) {
+	var nomP = req.body.personne;
+	var location = req.body.loc;
+
+	console.log(nomP);
+	if(!nomP || nomP == ""){
+		res.json({
+			error:{
+				code: 404,
+				message: "La personne et la location doivent être remplis. Reçu:"+nomP+location
+			}
+		});
+		return;
+	}
+	getConnection();
+
+	//Check if personn exist or not. If yes then ok we can add it to the DB
+	var sql = "SELECT `nom` FROM `personne` WHERE `nom`=" + connection.escape(nomP);
+	connection.query(sql, function(err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+
+		if(results.length == 0){
+			res.json({
+				error:{
+					code: 403,
+					message: "Person does not Exist"
+				}
+			});
+			return;
+		}
+
+	});
+
+	//Check if the rental is already in the DB
+	var sql = "SELECT `nom` FROM `location` WHERE `nom`=" + connection.escape(location);
+	connection.query(sql, function(err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+
+		if(results.length == 0){
+			res.json({
+				error:{
+					code: 403,
+					message: "Rental does not Exist"
+				}
+			});
+			return;
+		}
+
+	});
+	//Par défaut, lors d'une insertion, on considère l'intervenant comme étant "sur" l'intervention. Qu'il s'en occupe.
+	sql = "INSERT INTO `intervention` (nomPersonne,location) VALUES ("+connection.escape(nomP)+", "+connection.escape(location)+")";
+	console.log(sql);
+	connection.query(sql, function (err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+
+		res.json({
+			success:{
+				personne: nomP,
+				location: location
+			}
+		});
+
+		res.end();
+	});
+});
 
 
 app.listen(9090, function(){
