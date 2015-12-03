@@ -228,7 +228,7 @@ app.get("/bftool/intervention", function (req, res, err) {
 
 	getConnection();
 
-	var sql = "SELECT nomPersonne, location, time, onit FROM intervention;";
+	var sql = "SELECT user, location, time, onit FROM intervention;";
 	connection.query(sql, function(err,results){
 		if(err){
 			sendErr(err, res);
@@ -241,7 +241,7 @@ app.get("/bftool/intervention", function (req, res, err) {
 		for(var i = 0; i< results.length; i++){
 			response.intervention.push({
 				time: results[i]['time'],
-				nomPersonne: results[i]['nomPersonne'],
+				personne: results[i]['user'],
 				location: results[i]['location'],
 				onit: results[i]['onit']
 			});
@@ -254,15 +254,15 @@ app.get("/bftool/intervention", function (req, res, err) {
 
 //New Inter
 app.post("/bftool/intervention/new", function (req, res, err) {
-	var nomP = req.body.personne;
+	var user = req.body.personne;
 	var location = req.body.loc;
 
-	console.log(nomP);
-	if(!nomP || nomP == ""){
+	console.log(user);
+	if(!user || user == ""){
 		res.json({
 			error:{
 				code: 404,
-				message: "La personne et la location doivent être remplis. Reçu:"+nomP+location
+				message: "La personne et la location doivent être remplis. Reçu:"+user+location
 			}
 		});
 		return;
@@ -270,7 +270,7 @@ app.post("/bftool/intervention/new", function (req, res, err) {
 	getConnection();
 
 	//Check if personn exist or not. If yes then ok we can add it to the DB
-	var sql = "SELECT `nom` FROM `personne` WHERE `nom`=" + connection.escape(nomP);
+	var sql = "SELECT `nom` FROM `personne` WHERE `nom`=" + connection.escape(user);
 	connection.query(sql, function(err, results){
 		if(err){
 			sendErr(err, res);
@@ -309,7 +309,7 @@ app.post("/bftool/intervention/new", function (req, res, err) {
 
 	});
 	//Par défaut, lors d'une insertion, on considère l'intervenant comme étant "sur" l'intervention. Qu'il s'en occupe.
-	sql = "INSERT INTO `intervention` (nomPersonne,location) VALUES ("+connection.escape(nomP)+", "+connection.escape(location)+")";
+	sql = "INSERT INTO `intervention` (user,location) VALUES ("+connection.escape(user)+", "+connection.escape(location)+")";
 	console.log(sql);
 	connection.query(sql, function (err, results){
 		if(err){
@@ -319,7 +319,7 @@ app.post("/bftool/intervention/new", function (req, res, err) {
 
 		res.json({
 			success:{
-				personne: nomP,
+				personne: user,
 				location: location
 			}
 		});
@@ -328,7 +328,129 @@ app.post("/bftool/intervention/new", function (req, res, err) {
 	});
 });
 
+//Show intervention of a user.
+app.get("/bftool/intervention/:user/all", function (req, res, err) {
+	var user = req.params.user;
+
+	getConnection();
+
+	var sql = "SELECT location, time FROM intervention WHERE user="+connection.escape(user)+" ORDER BY time;";
+	connection.query(sql, function(err,results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+		var response={
+			intervention: []
+			};
+
+		for(var i = 0; i< results.length; i++){
+			response.intervention.push({
+				time: results[i]['time'],
+				nom: results[i]['user'],
+				location: results[i]['location']				
+			});
+		}
+		res.json(response);
+		res.end();
+	});
+
+});
+
+
+//Change intervention statut
+app.post("/bftool/intervention/change", function (req, res, err) {
+	var user = req.body.user;
+	var location = req.body.loc;
+	var bool = req.body.bool;
+
+	console.log(user);
+	if(!user || user == ""){
+		res.json({
+			error:{
+				code: 404,
+				message: "La personne et la location doivent être remplis. Reçu:"+user+location
+			}
+		});
+		return;
+	}
+
+	getConnection();
+
+	//Check if personn exist or not. If yes then ok we can add it to the DB
+	var sql = "SELECT `nom` FROM `personne` WHERE `nom`=" + connection.escape(user);
+	connection.query(sql, function(err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+
+		if(results.length == 0){
+			res.json({
+				error:{
+					code: 403,
+					message: "Person does not Exist"
+				}
+			});
+			return;
+		}
+
+	});
+
+	//Check if the rental is already in the DB
+	sql = "SELECT `nom` FROM `location` WHERE `nom`=" + connection.escape(location);
+	connection.query(sql, function(err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+
+		if(results.length == 0){
+			res.json({
+				error:{
+					code: 403,
+					message: "Rental does not Exist"
+				}
+			});
+			return;
+		}
+
+	});
+
+	var test;
+	sql = "SELECT id FROM intervention WHERE user="+connection.escape(user)+" AND location="+connection.escape(location)+" ORDER BY id DESC LIMIT 1";
+	console.log(sql);
+	connection.query(sql, function (err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+		test=results['id'];
+	});
+	
+	sql = "UPDATE `intervention` SET onit="+connection.escape(bool)+" WHERE `id`="+test;
+	connection.query(sql, function(err, results){
+		if(err){
+			sendErr(err, res);
+			throw new Error(err);
+		}
+	console.log("\n\n ZEFUCK? \n"+test+"\n");
+		res.json({
+			success:{
+				personne: user,
+				location: location,
+				onit: bool,
+				id: test
+			}
+		});
+	});
+
+});
+
+
+
+
 
 app.listen(9090, function(){
-	console.log("Listening!");
+	console.log("\nListening!\n");
 });
