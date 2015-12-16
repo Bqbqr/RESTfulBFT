@@ -417,30 +417,18 @@ app.post("/bftool/intervention/change", function (req, res, err) {
 
 	});
 
-	var test;
-	sql = "SELECT id FROM intervention WHERE user="+connection.escape(user)+" AND location="+connection.escape(location)+" ORDER BY id DESC LIMIT 1";
+	sql = "UPDATE `intervention` SET onit="+connection.escape(bool)+" WHERE user="+connection.escape(user)+" AND location="+connection.escape(location)+" ORDER BY id DESC LIMIT 1";
 	console.log(sql);
-	connection.query(sql, function (err, results){
-		if(err){
-			sendErr(err, res);
-			throw new Error(err);
-		}
-		test=results['id'];
-	});
-	
-	sql = "UPDATE `intervention` SET onit="+connection.escape(bool)+" WHERE `id`="+test;
 	connection.query(sql, function(err, results){
 		if(err){
 			sendErr(err, res);
 			throw new Error(err);
 		}
-	console.log("\n\n ZEFUCK? \n"+test+"\n");
 		res.json({
 			success:{
 				personne: user,
 				location: location,
-				onit: bool,
-				id: test
+				onit: bool
 			}
 		});
 	});
